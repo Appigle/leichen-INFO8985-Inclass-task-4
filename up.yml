@@ -1,12 +1,56 @@
 ---
 - import_playbook: k8s/up.yml
-- name: bootstrap signoz
+
+- name: start signoz via docker compose
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: docker compose up
+    - name: apply signoz patch
+      ansible.builtin.shell: |
+        cd signoz && patch -p1 < ../signoz/patch.diff
+      ignore_errors: true
+
+    - name: start signoz docker compose
       community.docker.docker_compose_v2:
         project_src: signoz
         files:
-        - docker-compose.yml
+          - docker-compose.yml
         state: present
+        wait: true
+        wait_timeout: 180
+
+- name: install k8s-infra helm chart
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: add signoz helm repository
+      kubernetes.core.helm_repository:
+        name: signoz
+        repo_url: https://charts.signoz.io
+        state: present
+
+    - name: update helm repositories
+      kubernetes.core.helm:
+        name: signoz
+        chart_ref: signoz
+        update_repo_cache: true
+        state: absent
+        wait: false
+      ignore_errors: true
+
+    - name: install k8s-infra helm chart
+      kubernetes.core.helm:
+        name: k8s-infra
+        chart_ref: signoz/k8s-infra
+        release_namespace: default
+        create_namespace: true
+        values_files:
+          - override-values.yaml
+        state: present
+        wait: true
+        wait_condition:
+          type: Ready
+          status: 'True'
+        wait_timeout: 600
+
+- import_playbook: rolldice.up.yml

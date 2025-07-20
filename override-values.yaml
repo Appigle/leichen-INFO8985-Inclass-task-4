@@ -1,0 +1,80 @@
+# K8s-Infra Helm Chart Override Values
+# Configures the chart to send data to upstream OTEL collector
+
+global:
+  cloud: others
+  clusterName: local-k8s
+  deploymentEnvironment: development
+
+# Configure upstream OTEL collector endpoint
+# For SigNoz running via Docker Compose on host machine (accessible from k3d)
+# k3d automatically exposes host.docker.internal for host access
+otelCollectorEndpoint: host.docker.internal:4317
+otelInsecure: true
+
+# Alternative: For direct host IP access (if host.docker.internal doesn't work)
+# Get your host IP with: ip route get 1.1.1.1 | awk '{print $7}' | head -1
+# otelCollectorEndpoint: <YOUR_HOST_IP>:4317
+# otelInsecure: true
+
+# For SigNoz Cloud, uncomment and configure:
+# otelCollectorEndpoint: ingest.{region}.signoz.cloud:443
+# otelInsecure: false
+# signozApiKey: <YOUR_SIGNOZ_INGESTION_KEY>
+
+# Presets configuration
+presets:
+  # Enable OTLP exporter to send to upstream collector
+  otlpExporter:
+    enabled: true
+
+  # Disable logging exporter since we're using OTLP
+  loggingExporter:
+    enabled: false
+
+  # Enable logs collection from Kubernetes
+  logsCollection:
+    enabled: true
+
+  # Enable host metrics collection
+  hostMetrics:
+    enabled: true
+
+  # Enable kubelet metrics collection
+  kubeletMetrics:
+    enabled: true
+
+  # Enable cluster-level metrics collection
+  clusterMetrics:
+    enabled: true
+
+# Enable OTEL deployment for gateway functionality
+otelDeployment:
+  enabled: true
+
+# Additional OpenTelemetry configuration
+opentelemetry-collector:
+  # Configure the OTEL collector to act as a gateway
+  mode: deployment
+
+  # Resource limits for the collector
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Configure the agent (DaemonSet) for node-level collection
+otelAgent:
+  enabled: true
+
+  # Resource limits for agents
+  resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi

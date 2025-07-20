@@ -1,0 +1,57 @@
+- name: setup and run rolldice app
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: install python dependencies
+      ansible.builtin.pip:
+        name:
+          - flask
+          - opentelemetry-distro
+          - opentelemetry-exporter-otlp
+
+    - name: bootstrap opentelemetry
+      ansible.builtin.shell: opentelemetry-bootstrap -a install
+
+    - name: wait for k8s-infra collector to be ready
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: default
+        label_selectors:
+          - 'app.kubernetes.io/name=opentelemetry-collector'
+        wait: true
+        wait_condition:
+          type: Ready
+          status: 'True'
+        wait_timeout: 300
+
+    - name: get k8s-infra collector service endpoint
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Service
+        namespace: default
+        name: k8s-infra-opentelemetry-collector
+      register: collector_service
+
+    - name: start rolldice app with proper telemetry configuration
+      ansible.builtin.shell: |
+        export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+        export OTEL_EXPORTER_OTLP_INSECURE=true
+        export OTEL_SERVICE_NAME="rolldice-app"
+        export OTEL_SERVICE_VERSION="1.0.0"
+        export OTEL_DEPLOYMENT_ENVIRONMENT="development"
+        export OTEL_RESOURCE_ATTRIBUTES="service.name=rolldice-app,service.version=1.0.0,deployment.environment=development"
+
+        # Port forward k8s-infra collector to localhost:4317 for app access
+        kubectl port-forward -n default svc/k8s-infra-opentelemetry-collector 4317:4317 &
+
+        # Give port-forward time to establish
+        sleep 5
+
+        # Start the Flask app with auto-instrumentation
+        opentelemetry-instrument --traces_exporter otlp --metrics_exporter otlp --logs_exporter otlp python rolldice.py
+      async: 3600 # Run in background
+      poll: 0
+      environment:
+        FLASK_ENV: development
+        FLASK_DEBUG: '1'
