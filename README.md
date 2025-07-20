@@ -54,11 +54,6 @@ Edit `override-values.yaml` to customize:
 - `global.clusterName`: Your cluster identifier
 - `global.deploymentEnvironment`: Environment name
 
-## Documentation
-
-- **[TESTING.md](TESTING.md)**: Comprehensive testing guide
-- **[ROLLDICE-INTEGRATION.md](ROLLDICE-INTEGRATION.md)**: Detailed integration guide
-- **[project.md](project.md)**: Complete project analysis
 
 ## Teardown
 
@@ -66,11 +61,3 @@ Edit `override-values.yaml` to customize:
 ansible-playbook down.yml
 ```
 
-## Learning Objectives
-
-This setup demonstrates:
-
-- **Infrastructure as Code**: Ansible automation
-- **Kubernetes Monitoring**: k8s-infra Helm chart deployment
-- **Application Observability**: OpenTelemetry instrumentation
-- **End-to-end Telemetry**: Complete traces, metrics, and logs pipeline
