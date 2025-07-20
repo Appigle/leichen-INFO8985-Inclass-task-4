@@ -8,8 +8,8 @@ global:
 
 # Configure upstream OTEL collector endpoint
 # For SigNoz running via Docker Compose on host machine (accessible from k3d)
-# k3d automatically exposes host.docker.internal for host access
-otelCollectorEndpoint: host.docker.internal:4317
+# Using k3d host IP for reliable connectivity
+otelCollectorEndpoint: 10.42.0.1:4317
 otelInsecure: true
 
 # Alternative: For direct host IP access (if host.docker.internal doesn't work)

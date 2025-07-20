@@ -16,8 +16,22 @@
         files:
           - docker-compose.yml
         state: present
-        wait: true
-        wait_timeout: 180
+        wait: false
+      register: signoz_result
+      ignore_errors: true
+
+    - name: wait for core signoz services to be healthy
+      ansible.builtin.shell: |
+        timeout 180 bash -c '
+        while true; do
+          if docker ps --filter "name=signoz" --filter "health=healthy" | grep -q "healthy"; then
+            echo "SigNoz core service is healthy"
+            break
+          fi
+          echo "Waiting for SigNoz to be healthy..."
+          sleep 5
+        done'
+      register: health_check
 
 - name: install k8s-infra helm chart
   hosts: localhost
@@ -48,9 +62,6 @@
           - override-values.yaml
         state: present
         wait: true
-        wait_condition:
-          type: Ready
-          status: 'True'
-        wait_timeout: 600
+        wait_timeout: 600s
 
 - import_playbook: rolldice.up.yml
