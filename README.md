@@ -2,6 +2,10 @@
 
 Complete observability setup with SigNoz, k8s-infra monitoring, and instrumented Flask app
 
+![Signoz](./screenshots/detail.png)
+![Signoz](./screenshots/image.png)
+![Signoz](./screenshots/k8s.png)
+
 ## Quick Start
 
 ```bash
